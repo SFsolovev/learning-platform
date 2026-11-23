@@ -1,6 +1,8 @@
 package com.example.learning_platform.service;
 
 import com.example.learning_platform.dto.OptionData;
+import com.example.learning_platform.dto.QuizResponse;
+import com.example.learning_platform.dto.QuizResultResponse;
 import com.example.learning_platform.entity.*;
 import com.example.learning_platform.entity.UserRepository;
 import com.example.learning_platform.exception.*;
@@ -98,5 +100,40 @@ public class QuizService {
     @Transactional(readOnly = true)
     public List<QuizSubmission> getResults(Long quizId) {
         return quizSubmissionRepository.findByQuizId(quizId);
+    }
+
+    @Transactional(readOnly = true)
+    public QuizResponse getQuizResponse(Long quizId) {
+        return QuizResponse.from(quizRepository.findById(quizId)
+                .orElseThrow(() -> new NotFoundException("Квиз не найден: " + quizId)));
+    }
+
+    @Transactional(readOnly = true)
+    public QuizResponse getQuizResponseByModule(Long moduleId) {
+        return QuizResponse.from(quizRepository.findByModuleId(moduleId)
+                .orElseThrow(() -> new NotFoundException("У модуля нет квиза: " + moduleId)));
+    }
+
+    @Transactional
+    public QuizResultResponse takeQuizResult(Long quizId, Long studentId, Map<Long, Set<Long>> answers) {
+        return QuizResultResponse.from(takeQuiz(quizId, studentId, answers));
+    }
+
+    @Transactional(readOnly = true)
+    public List<QuizResultResponse> getQuizResults(Long quizId) {
+        if (!quizRepository.existsById(quizId)) {
+            throw new NotFoundException("Квиз не найден: " + quizId);
+        }
+        return quizSubmissionRepository.findByQuizId(quizId).stream()
+                .map(QuizResultResponse::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<QuizResultResponse> getStudentResults(Long studentId) {
+        if (!userRepository.existsById(studentId)) {
+            throw new NotFoundException("Пользователь не найден: " + studentId);
+        }
+        return quizSubmissionRepository.findByStudentId(studentId).stream()
+                .map(QuizResultResponse::from).toList();
     }
 }

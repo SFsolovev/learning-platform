@@ -1,11 +1,9 @@
 package com.example.learning_platform.web;
 
-import com.example.learning_platform.dto.CreateUserRequest;
-import com.example.learning_platform.dto.EnrollmentResponse;
-import com.example.learning_platform.dto.SubmissionResponse;
-import com.example.learning_platform.dto.UserResponse;
+import com.example.learning_platform.dto.*;
 import com.example.learning_platform.service.AssignmentService;
 import com.example.learning_platform.service.EnrollmentService;
+import com.example.learning_platform.service.QuizService;
 import com.example.learning_platform.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +19,7 @@ public class UserController {
     private final UserService userService;
     private final AssignmentService assignmentService;
     private final EnrollmentService enrollmentService;
+    private final QuizService quizService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -46,5 +45,10 @@ public class UserController {
     @GetMapping("/{id}/enrollments")
     public List<EnrollmentResponse> enrollments(@PathVariable Long id) {
         return enrollmentService.getStudentEnrollments(id);
+    }
+
+    @GetMapping("/{id}/quiz-results")
+    public List<QuizResultResponse> quizResults(@PathVariable Long id) {
+        return quizService.getStudentResults(id);
     }
 }
