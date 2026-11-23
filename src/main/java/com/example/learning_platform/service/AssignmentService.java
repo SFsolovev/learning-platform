@@ -1,5 +1,7 @@
 package com.example.learning_platform.service;
 
+import com.example.learning_platform.dto.AssignmentResponse;
+import com.example.learning_platform.dto.SubmissionResponse;
 import com.example.learning_platform.entity.*;
 import com.example.learning_platform.entity.UserRepository;
 import com.example.learning_platform.exception.*;
@@ -80,5 +82,37 @@ public class AssignmentService {
     @Transactional(readOnly = true)
     public List<Submission> getSubmissions(Long assignmentId) {
         return submissionRepository.findByAssignmentId(assignmentId);
+    }
+
+    @Transactional
+    public SubmissionResponse grade(Long submissionId, int score, String feedback) {
+        return SubmissionResponse.from(gradeSubmission(submissionId, score, feedback));
+    }
+
+    @Transactional(readOnly = true)
+    public List<AssignmentResponse> getAssignmentsByLesson(Long lessonId) {
+        if (!lessonRepository.existsById(lessonId)) {
+            throw new NotFoundException("Урок не найден: " + lessonId);
+        }
+        return assignmentRepository.findByLessonId(lessonId).stream()
+                .map(AssignmentResponse::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<SubmissionResponse> getSubmissionResponses(Long assignmentId) {
+        if (!assignmentRepository.existsById(assignmentId)) {
+            throw new NotFoundException("Задание не найдено: " + assignmentId);
+        }
+        return submissionRepository.findByAssignmentId(assignmentId).stream()
+                .map(SubmissionResponse::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<SubmissionResponse> getStudentSubmissions(Long studentId) {
+        if (!userRepository.existsById(studentId)) {
+            throw new NotFoundException("Пользователь не найден: " + studentId);
+        }
+        return submissionRepository.findByStudentId(studentId).stream()
+                .map(SubmissionResponse::from).toList();
     }
 }

@@ -1,5 +1,6 @@
 package com.example.learning_platform.service;
 
+import com.example.learning_platform.dto.EnrollmentResponse;
 import com.example.learning_platform.entity.CourseRepository;
 import com.example.learning_platform.entity.*;
 import com.example.learning_platform.entity.UserRepository;
@@ -57,5 +58,23 @@ public class EnrollmentService {
     @Transactional(readOnly = true)
     public List<Enrollment> getByStudent(Long studentId) {
         return enrollmentRepository.findByUserId(studentId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EnrollmentResponse> getCourseEnrollments(Long courseId) {
+        if (!courseRepository.existsById(courseId)) {
+            throw new NotFoundException("Курс не найден: " + courseId);
+        }
+        return enrollmentRepository.findByCourseId(courseId).stream()
+                .map(EnrollmentResponse::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<EnrollmentResponse> getStudentEnrollments(Long studentId) {
+        if (!userRepository.existsById(studentId)) {
+            throw new NotFoundException("Пользователь не найден: " + studentId);
+        }
+        return enrollmentRepository.findByUserId(studentId).stream()
+                .map(EnrollmentResponse::from).toList();
     }
 }

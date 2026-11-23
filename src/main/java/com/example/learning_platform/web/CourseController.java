@@ -62,4 +62,21 @@ public class CourseController {
     public void unenroll(@PathVariable Long id, @PathVariable Long studentId) {
         enrollmentService.unenroll(id, studentId);
     }
+
+    @GetMapping("/{id}/structure")
+    public CourseStructureResponse structure(@PathVariable Long id) {
+        return courseService.getCourseStructure(id);
+    }
+
+    @PostMapping("/{id}/modules")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ModuleResponse addModule(@PathVariable Long id, @Valid @RequestBody CreateModuleRequest r) {
+        return ModuleResponse.from(courseService.addModule(id, r.title(), r.orderIndex(), r.description()));
+    }
+
+    @PutMapping("/{id}/teacher")
+    public CourseResponse changeTeacher(@PathVariable Long id, @Valid @RequestBody ChangeTeacherRequest r) {
+        courseService.changeTeacher(id, r.teacherId());
+        return courseService.getCourseResponse(id);
+    }
 }

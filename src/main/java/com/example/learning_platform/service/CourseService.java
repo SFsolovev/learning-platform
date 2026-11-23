@@ -1,6 +1,9 @@
 package com.example.learning_platform.service;
 
 import com.example.learning_platform.dto.CourseResponse;
+import com.example.learning_platform.dto.CourseStructureResponse;
+import com.example.learning_platform.dto.LessonResponse;
+import com.example.learning_platform.dto.ModuleResponse;
 import com.example.learning_platform.entity.*;
 import com.example.learning_platform.entity.CourseRepository;
 import com.example.learning_platform.entity.UserRepository;
@@ -43,26 +46,9 @@ public class CourseService {
         return courseRepository.save(course);
     }
 
-    @Transactional
-    public CourseModule addModule(Long courseId, String title, int orderIndex) {
-        Course course = getCourse(courseId);
-        CourseModule module = new CourseModule();
-        module.setTitle(title);
-        module.setOrderIndex(orderIndex);
-        course.addModule(module);          // синхронизирует обе стороны связи
-        return moduleRepository.save(module);
-    }
 
-    @Transactional
-    public Lesson addLesson(Long moduleId, String title, String content) {
-        CourseModule module = moduleRepository.findById(moduleId)
-                .orElseThrow(() -> new NotFoundException("Модуль не найден: " + moduleId));
-        Lesson lesson = new Lesson();
-        lesson.setTitle(title);
-        lesson.setContent(content);
-        module.addLesson(lesson);
-        return lessonRepository.save(lesson);
-    }
+
+
 
     @Transactional(readOnly = true)
     public Course getCourse(Long id) {
@@ -94,5 +80,66 @@ public class CourseService {
     @Transactional(readOnly = true)
     public List<CourseResponse> getAllCourses() {
         return courseRepository.findAll().stream().map(CourseResponse::from).toList();
+    }
+
+    @Transactional
+    public CourseModule addModule(Long courseId, String title, int orderIndex) {
+        return addModule(courseId, title, orderIndex, null);
+    }
+
+    @Transactional
+    public CourseModule addModule(Long courseId, String title, int orderIndex, String description) {
+        Course course = getCourse(courseId);
+        CourseModule module = new CourseModule();
+        module.setTitle(title);
+        module.setOrderIndex(orderIndex);
+        module.setDescription(description);
+        course.addModule(module);
+        return moduleRepository.save(module);
+    }
+
+    @Transactional
+    public Lesson addLesson(Long moduleId, String title, String content) {
+        return addLesson(moduleId, title, content, null);
+    }
+
+    @Transactional
+    public Lesson addLesson(Long moduleId, String title, String content, String videoUrl) {
+        CourseModule module = moduleRepository.findById(moduleId)
+                .orElseThrow(() -> new NotFoundException("Модуль не найден: " + moduleId));
+        Lesson lesson = new Lesson();
+        lesson.setTitle(title);
+        lesson.setContent(content);
+        lesson.setVideoUrl(videoUrl);
+        module.addLesson(lesson);
+        return lessonRepository.save(lesson);
+    }
+
+    @Transactional
+    public void changeTeacher(Long courseId, Long teacherId) {
+        Course course = getCourse(courseId);
+        User teacher = userRepository.findById(teacherId)
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден: " + teacherId));
+        if (teacher.getRole() != Role.TEACHER) {
+            throw new BusinessException("Назначить можно только преподавателя");
+        }
+        course.setTeacher(teacher);
+    }
+
+    @Transactional(readOnly = true)
+    public CourseStructureResponse getCourseStructure(Long id) {
+        Course course = getCourse(id);
+        List<ModuleResponse> modules = moduleRepository
+                .findWithLessonsByCourseIdOrderByOrderIndex(id).stream()
+                .map(ModuleResponse::from).toList();
+        return CourseStructureResponse.from(course, modules);
+    }
+
+    @Transactional(readOnly = true)
+    public List<LessonResponse> getLessons(Long moduleId) {
+        if (!moduleRepository.existsById(moduleId)) {
+            throw new NotFoundException("Модуль не найден: " + moduleId);
+        }
+        return lessonRepository.findByModuleId(moduleId).stream().map(LessonResponse::from).toList();
     }
 }

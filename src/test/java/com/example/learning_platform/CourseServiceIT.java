@@ -1,5 +1,7 @@
 package com.example.learning_platform;
 
+import com.example.learning_platform.dto.CourseStructureResponse;
+import com.example.learning_platform.dto.ModuleResponse;
 import com.example.learning_platform.entity.*;
 import com.example.learning_platform.exception.BusinessException;
 import com.example.learning_platform.exception.NotFoundException;
@@ -60,6 +62,27 @@ class CourseServiceIT extends BaseIntegrationTest {
         em.flush(); em.clear();   // см. пояснение ниже
 
         assertThatThrownBy(() -> courseService.deleteCourse(c.getId()))
+                .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void courseStructureLoadsModulesWithLessonsInOrder() {
+        Course c = createCourse(createUser(Role.TEACHER));
+        CourseModule m2 = courseService.addModule(c.getId(), "Second", 2);
+        CourseModule m1 = courseService.addModule(c.getId(), "First", 1);
+        courseService.addLesson(m1.getId(), "L1", "text");
+        em.flush(); em.clear();
+
+        CourseStructureResponse s = courseService.getCourseStructure(c.getId());
+        assertThat(s.modules()).extracting(ModuleResponse::title).containsExactly("First", "Second");
+        assertThat(s.modules().get(0).lessons()).hasSize(1);
+    }
+
+    @Test
+    void changeTeacherRejectsStudent() {
+        Course c = createCourse(createUser(Role.TEACHER));
+        User student = createUser(Role.STUDENT);
+        assertThatThrownBy(() -> courseService.changeTeacher(c.getId(), student.getId()))
                 .isInstanceOf(BusinessException.class);
     }
 }
