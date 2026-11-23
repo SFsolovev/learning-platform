@@ -16,4 +16,7 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     @Override
     @EntityGraph(attributePaths = {"category", "teacher"})
     List<Course> findAll();
+
+    @EntityGraph(attributePaths = {"category", "teacher"})
+    List<Course> findByTagsId(Long tagId);
 }
