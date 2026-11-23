@@ -1,0 +1,14 @@
+package com.example.learning_platform;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+
+@SpringBootTest
+@ActiveProfiles("test")
+class LearningPlatformApplicationTests {
+
+    @Test
+    void contextLoads() {
+    }
+}

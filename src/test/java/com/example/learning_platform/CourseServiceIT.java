@@ -1,0 +1,65 @@
+package com.example.learning_platform;
+
+import com.example.learning_platform.entity.*;
+import com.example.learning_platform.exception.BusinessException;
+import com.example.learning_platform.exception.NotFoundException;
+import org.junit.jupiter.api.Test;
+import org.springframework.transaction.annotation.Transactional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+@Transactional
+class CourseServiceIT extends BaseIntegrationTest {
+
+    @Test
+    void teacherCreatesCourseWithModuleAndLesson() {
+        User teacher = createUser(Role.TEACHER);
+        Course c = createCourse(teacher);
+        CourseModule m = courseService.addModule(c.getId(), "M1", 1);
+        courseService.addLesson(m.getId(), "L1", "text");
+        em.flush(); em.clear();
+
+        Course loaded = courseRepository.findWithModulesById(c.getId()).orElseThrow();
+        assertThat(loaded.getModules()).hasSize(1);
+        assertThat(loaded.getTeacher().getId()).isEqualTo(teacher.getId());
+    }
+
+    @Test
+    void studentCannotCreateCourse() {
+        User student = createUser(Role.STUDENT);
+        Long catId = createCategory().getId();
+        assertThatThrownBy(() -> courseService.createCourse("X", "d", catId, student.getId()))
+                .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void unknownCategoryGivesNotFound() {
+        User teacher = createUser(Role.TEACHER);
+        assertThatThrownBy(() -> courseService.createCourse("X", "d", 999999L, teacher.getId()))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void deleteCourseCascadesToModules() {
+        Course c = createCourse(createUser(Role.TEACHER));
+        CourseModule m = courseService.addModule(c.getId(), "M1", 1);
+        em.flush(); em.clear();
+
+        courseService.deleteCourse(c.getId());
+        em.flush();
+
+        assertThat(moduleRepository.existsById(m.getId())).isFalse();
+    }
+
+    @Test
+    void courseWithEnrollmentsCannotBeDeleted() {
+        Course c = createCourse(createUser(Role.TEACHER));
+        User student = createUser(Role.STUDENT);
+        enrollmentService.enrollStudent(c.getId(), student.getId());
+        em.flush(); em.clear();   // см. пояснение ниже
+
+        assertThatThrownBy(() -> courseService.deleteCourse(c.getId()))
+                .isInstanceOf(BusinessException.class);
+    }
+}
